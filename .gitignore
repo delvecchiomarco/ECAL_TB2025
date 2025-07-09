@@ -1,0 +1,19 @@
+# File temporanei degli editor
+*~
+*.swp
+*.swo
+
+# File di Python
+__pycache__/
+*.py[cod]
+
+# Ambienti virtuali
+venv/
+.env/
+
+# File di log
+*.log
+
+# File di sistema
+.DS_Store
+

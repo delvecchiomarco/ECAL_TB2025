@@ -1,0 +1,2 @@
+name;title;x;y;cuts;color;binsnx;binsminx;binsmaxx;binsny;binsminy;binsmaxy;xlabel;ylabel
+charge_sum_5x5; ;charge_sum_5x5;0; ;kBlack;10000;6000;16000;0;0;0;charge 5x5 [pC];pC

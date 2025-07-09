@@ -16,7 +16,6 @@ def map_eta_phi() :
         56, 56, 56, 56, 56, 57, 57, 57, 57, 57, 58, 58, 58, 58, 58, 59, 59, 59, 59, 59, 60, 60, 60, 60, 60,
         90, 90, 90, 90, 90, 89, 89, 89, 89, 89, 88, 88, 88, 88, 88, 87, 87, 87, 87, 87, 86, 86, 86, 86, 86
     ])
-
     iphi = np.array([
         10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 10,  9,  8,  7,  6,
         15, 14, 13, 12, 11, 11, 12, 13, 14, 15, 15, 14, 13, 12, 11, 11, 12, 13, 14, 15, 15, 14, 13, 12, 11,
@@ -39,6 +38,7 @@ def mask_central_channel(eta_min, phi_min):
     mask_central = (ieta == (eta_min+2)) & (iphi == (phi_min+2))
     return mask_central
 
+
 def mask_5x5_matrix(eta_min, phi_min, eta_max, phi_max):
     ieta, iphi = map_eta_phi()
     mask_eta_maj = ieta >= eta_min
@@ -47,6 +47,7 @@ def mask_5x5_matrix(eta_min, phi_min, eta_max, phi_max):
     mask_phi_min = iphi <= phi_max
     mask_5x5 = mask_eta_maj & mask_eta_min & mask_phi_maj & mask_phi_min
     return mask_5x5
+
 
 def read_data(waves):
     bit13_mask = 1 << 13 #validity bit
@@ -60,11 +61,13 @@ def read_data(waves):
     amplitudes_corr[~is_valid] = 0
     return amplitudes_corr, is_valid, gain_is_1
 
+
 def mask_amplitudes(amplitudes, central_idx, threshold=150):
     #nevents, nchannels, nsamples = amplitudes.shape
     amplitudes_central = amplitudes[:, central_idx, :]
     mask_sig_amp = (amplitudes_central.max(axis=1) > 150).squeeze()
     return mask_sig_amp
+
 
 def mask_rms_baseline(amplitudes, central_idx, threshold=20, pre=5, post=10):
     nevents, nchannels, nsamples = amplitudes.shape
