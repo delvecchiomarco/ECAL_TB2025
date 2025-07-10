@@ -54,58 +54,75 @@ def main(arguments):
     mask_5x5 = reco_functions.mask_5x5_matrix(eta_min, phi_min, eta_max, phi_max)
     # print(f"------- DEBUG -------\nmask_matrix: {mask_5x5}")
     
-
     # read branch xtal_sample
     waves = tree["xtal_sample"].array(library="np")
     # print(f"------- DEBUG -------\nwaves.shape: {waves.shape}")
-    # print(f"------- DEBUG -------\nwaves[0, 0, :] {waves[0, 0, :]}")
     amplitudes_corr, is_valid, gain_is_1 = reco_functions.read_data(waves)
     # print(f"------- DEBUG -------\namplitudes_corr.shape: {amplitudes_corr.shape}")
-    # print(f"------- DEBUG -------\namplitudes_corr[0, 0, :]: {amplitudes_corr[0, 0, :]}")
-
-    # plot of all waves for central channel
-    # plot_functions.plot_central_waveform(amplitudes_corr, central_idx, output_path=f"./{reco_dir}/central_waveforms.pdf")
+    # plot_functions.plot_central_waveform(amplitudes_corr, central_idx, output_path=f"./{reco_dir}/central_waveforms.pdf")  # plot of all waves for central channel
 
     mask_sig_amp = reco_functions.mask_amplitudes(amplitudes_corr, central_idx, threshold=150)  # mask for signal amplitude above threshold
     waves_amp_masked = amplitudes_corr[mask_sig_amp, :]
     # print(f"------- DEBUG -------\nwaves_amp_masked.shape: {waves_amp_masked.shape}")
     mask_rms_bline, baselines, signal_window = reco_functions.mask_rms_baseline(waves_amp_masked, central_idx, threshold=20, pre=5, post=10)  # mask for baseline rms, baseline subtraction and definition of signal window
-    # print(f"------- DEBUG -------\nmask_rms_bline.shape: {mask_rms_bline.shape}")
     waves_rms_masked = waves_amp_masked[mask_rms_bline, :]
     signal_window = signal_window[mask_rms_bline, :]
     # print(f"------- DEBUG -------\nwaves_rms_masked.shape: {waves_rms_masked.shape}")
     # print(f"------- DEBUG -------\nsignal_window.shape: {signal_window.shape}")
     nevents, nchannels, nsamples = waves_rms_masked.shape
-    waves_rms_masked = waves_rms_masked - np.repeat(baselines[mask_rms_bline, :, np.newaxis], nsamples, axis=2)  # baseline subtraction
+    waves_masked = waves_rms_masked - np.repeat(baselines[mask_rms_bline, :, np.newaxis], nsamples, axis=2)  # baseline subtraction
     signal_window = signal_window - np.repeat(baselines[mask_rms_bline, :, np.newaxis], signal_window.shape[2], axis=2)
-    # print(f"------- DEBUG -------\nwaves_rms_masked.shape: {waves_rms_masked.shape}")
+    # print(f"------- DEBUG -------\nwaves_rms_masked.shape: {waves_masked.shape}")
     # print(f"------- DEBUG -------\nsignal_window.shape: {signal_window.shape}")
-
-    # plot of all waves for central channel after masking
-    # plot_functions.plot_central_waveform(waves_rms_masked, central_idx, output_path=f"./{reco_dir}/central_waveforms_masked.pdf")
+    # plot_functions.plot_central_waveform(waves_masked, central_idx, output_path=f"./{reco_dir}/central_waveforms_masked.pdf")  # plot of all waves for central channel after masking
 
     # charge_sum in 5x5 matrix
-    signal_window5x5 = signal_window[:, mask_5x5, :]
-    charge_thr = 100
-    charge = signal_window5x5.sum(axis=2)
-    # print(f"------- DEBUG -------\n{charge.shape}")
-    charge[charge < charge_thr] = 0
-    charge_sum_5x5 = charge.sum(axis=1)
-    # print(f"------- DEBUG -------\ncharge_sum_5x5.shape: {charge_sum_5x5.shape}")
-    # print(f"------- DEBUG -------\ncharge_sum_5x5: {charge_sum_5x5}")
+    charge_5x5 = reco_functions.charge_sum_5x5(signal_window, mask_5x5, charge_thr=100)
 
-    # data_to_plot.csv creation
+    # mean of the index of the maximum sample
+    # mean_sample_max = reco_functions.mean_sample_max(waves_masked)
+    sample_max = np.argmax(waves_masked, axis=2)
+
+    # data_to_plot_nevents.csv creation
     f = ROOT.TFile(f"./{reco_dir}/{run}_{spill}_reco.root", "RECREATE")
-    tree = ROOT.TTree("h4_reco", "")
+    tree_nevents = ROOT.TTree("h4_reco", "")
     charge_branch = array('f', [0.0])
-    # print(f"------- DEBUG -------\ncharge_branch = {charge_branch}")
-    tree.Branch("charge_sum_5x5", charge_branch, "charge_sum_5x5/F")
-    for val in charge_sum_5x5:
-        charge_branch[0] = val
-        tree.Fill()
-    # print(f"------- DEBUG -------\ncharge_branch = {charge_branch}")
-    tree.Write()
+    sample_max_branch = array('f', [0.0] * nchannels)
+    ieta_branch = array('f', [0.0] * nchannels)
+    iphi_branch = array('f', [0.0] * nchannels)
+    tree_nevents.Branch("charge_5x5", charge_branch, "charge_5x5/F")
+    tree_nevents.Branch("sample_max", sample_max_branch, f"sample_max[{nchannels}]/F")
+    tree_nevents.Branch("ieta", ieta_branch, f"ieta[{nchannels}]/F")
+    tree_nevents.Branch("iphi", iphi_branch, f"iphi[{nchannels}]/F")
+    for i in range(nevents):
+        charge_branch[0] = charge_5x5[i]
+        for ch in range(nchannels):
+            sample_max_branch[ch] = sample_max[i][ch]
+            ieta_branch[ch] = ieta[ch]
+            iphi_branch[ch] = iphi[ch]
+            # print(ieta[ch], iphi[ch])
+        tree_nevents.Fill()
+    tree_nevents.Write()
+    print(f"Tree h4_reco written in {reco_dir}/{run}_{spill}_reco.root")
     f.Close()
+
+    # # data_to_plot_nchannels.csv creation
+    # f = ROOT.TFile(f"./{reco_dir}/{run}_{spill}_reco_nchannels.root", "RECREATE")
+    # tree_nchannels = ROOT.TTree("h4_reco", "")
+    # eta_branch = array('i', [0])
+    # phi_branch = array('i', [0])
+    # mean_sample_max_branch = array('f', [0.0]*nevents)
+    # tree_nchannels.Branch("ieta", eta_branch, "ieta/I")
+    # tree_nchannels.Branch("iphi", phi_branch, "iphi/I")
+    # tree_nchannels.Branch("mean_sample_max", mean_sample_max_branch, f"mean_sample_max/F")
+    # for i in range(nchannels):
+    #     eta_branch[0] = ieta[i]
+    #     phi_branch[0] = iphi[i]
+    #     mean_sample_max_branch[0] = mean_sample_max[i]
+    #     tree_nchannels.Fill()
+    # tree_nchannels.Write()
+    # print(f"Tree h4_reco written in {reco_dir}/{run}_{spill}_reco_nchannels.root")
+    # f.Close()
     
     time_end = time.time()
     print(f"Time elapsed for reco: {time_end - time_start:.4f} s")

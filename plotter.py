@@ -18,6 +18,7 @@ def main(arguments):
     parser.add_argument("-o", "--output-folder", type=str, required=True, help="output folder for plots")
     args = parser.parse_args(arguments)
     v = vars(args)
+    # print(f"------- DEBUG -------\nv: {v}")
     vars().update(v)
     dataconf_df = pd.read_csv(v['data'], sep=';')
     plotconf_df = pd.read_csv(v['plot_list'], sep=";")

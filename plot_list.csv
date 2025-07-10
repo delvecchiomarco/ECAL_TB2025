@@ -1,2 +1,3 @@
-name;title;x;y;cuts;color;binsnx;binsminx;binsmaxx;binsny;binsminy;binsmaxy;xlabel;ylabel
-charge_sum_5x5; ;charge_sum_5x5;0; ;kBlack;10000;6000;16000;0;0;0;charge 5x5 [pC];pC
+name;title;x;y;z;cuts;color;binsnx;binsminx;binsmaxx;binsny;binsminy;binsmaxy;xlabel;ylabel
+charge_5x5; ;charge_5x5;0;0; ;kBlack;10000;6000;16000;0;0;0;charge 5x5 [pC];pC
+mean_sample_max; ;ieta;iphi;sample_max; ;0;15;46;61;15;1;16;eta;phi

@@ -33,6 +33,19 @@ def map_eta_phi() :
     return ieta, iphi
 
 
+def read_data(waves):
+    bit13_mask = 1 << 13 #validity bit
+    bit12_mask = 1 << 12 #gain bit
+    amp_mask   = 0x0FFF #amplitude mask
+    is_valid = (waves & bit13_mask) != 0
+    gain_is_1 = (waves & bit12_mask) != 0
+    amplitudes = waves & amp_mask
+    amplitudes_corr = amplitudes.copy()
+    amplitudes_corr[gain_is_1] *= 10
+    amplitudes_corr[~is_valid] = 0
+    return amplitudes_corr, is_valid, gain_is_1
+
+
 def mask_central_channel(eta_min, phi_min):
     ieta, iphi = map_eta_phi()
     mask_central = (ieta == (eta_min+2)) & (iphi == (phi_min+2))
@@ -47,19 +60,6 @@ def mask_5x5_matrix(eta_min, phi_min, eta_max, phi_max):
     mask_phi_min = iphi <= phi_max
     mask_5x5 = mask_eta_maj & mask_eta_min & mask_phi_maj & mask_phi_min
     return mask_5x5
-
-
-def read_data(waves):
-    bit13_mask = 1 << 13 #validity bit
-    bit12_mask = 1 << 12 #gain bit
-    amp_mask   = 0x0FFF #amplitude mask
-    is_valid = (waves & bit13_mask) != 0
-    gain_is_1 = (waves & bit12_mask) != 0
-    amplitudes = waves & amp_mask
-    amplitudes_corr = amplitudes.copy()
-    amplitudes_corr[gain_is_1] *= 10
-    amplitudes_corr[~is_valid] = 0
-    return amplitudes_corr, is_valid, gain_is_1
 
 
 def mask_amplitudes(amplitudes, central_idx, threshold=150):
@@ -102,3 +102,19 @@ def mask_rms_baseline(amplitudes, central_idx, threshold=20, pre=5, post=10):
         signal_window.append(amplitudes[ev, :, start:end])
     signal_window = np.stack(signal_window)
     return mask_rms_bline, baselines, signal_window
+
+
+def charge_sum_5x5(signal_window, mask_5x5, charge_thr=100):
+    signal_window5x5 = signal_window[:, mask_5x5, :]
+    charge = signal_window5x5.sum(axis=2)
+    # print(f"------- DEBUG -------\n{charge.shape}")
+    charge[charge < charge_thr] = 0
+    charge_sum_5x5 = charge.sum(axis=1)
+    # print(f"------- DEBUG -------\ncharge_sum_5x5.shape: {charge_sum_5x5.shape}")
+    return charge_sum_5x5
+
+
+# def mean_sample_max(waves_masked):
+#     max_indices = np.argmax(waves_masked, axis=2)
+#     mean_sample_max = np.mean(max_indices, axis=0)
+#     return mean_sample_max

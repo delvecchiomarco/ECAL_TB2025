@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import ROOT
 import os
 
+import reco_functions
+
 
 def plot_central_waveform(waves, central_idx, output_path="central_waveforms.pdf"):
     central_waveform = waves[:, central_idx, :]
@@ -27,20 +29,20 @@ def plot(row, chain, outputfolder):
     c.cd()
     if str(row.cuts) == " ": cut = "1"
     else: cut = str(row.cuts)
-    print(f"------- DEBUG -------\ncut: {cut}")
-    if str(row.y).strip()=="0":
-        # print(f"------- DEBUG -------\nempty y")
+    if str(row.y).strip() == "0" and str(row.z).strip() == "0":
         h = ROOT.TH1F(f"{name}", f"{row.title}", int(row.binsnx), float(row.binsminx), float(row.binsmaxx))
         chain.Draw(f"{row.x}>>{name}", f"{cut}")
         h.SetLineColor(eval(f"ROOT.{row.color}"))
         binw = (float(row.binsmaxx) - float(row.binsminx))/int(row.binsnx)
         h.GetYaxis().SetTitle(f"entries / {float(f'{binw:.1g}'):g} {row.ylabel}")
-    else:
-        # print(f"------- DEBUG -------\nNOT empty y")
+    elif str(row.y).strip() != "0" and str(row.z).strip() == "0":
         h = ROOT.TH2F(f"{name}", f"{row.title}", int(row.binsnx), float(row.binsminx), float(row.binsmaxx), int(row.binsny), float(row.binsminy), float(row.binsmaxy))
         chain.Draw(f"{row.y}:{row.x}>>{name}", f"{cut}", "zcol")
         h.GetYaxis().SetTitle(f"{row.ylabel}")
-    h.GetXaxis().SetTitle(f"{row.xlabel}")
+    else:
+        h = ROOT.TProfile2D(f"{name}", f"{row.title}", int(row.binsnx), float(row.binsminx), float(row.binsmaxx), int(row.binsny), float(row.binsminy), float(row.binsmaxy))
+        chain.Draw(f"{row.z}:{row.y}:{row.x}>>{name}", f"{cut}", "prof2d zcol")
+        h.GetXaxis().SetTitle(f"{row.xlabel}")
     c.SaveAs(f"{outputfolder}/{name}.pdf")
     c.SaveAs(f"{outputfolder}/{name}.png")
     c.SaveAs(f"{outputfolder}/{name}.root")
@@ -58,9 +60,9 @@ def process(row, outputfolder, plot_df):
     chain = ROOT.TChain()
     for file in lst:
         chain.Add(f"{file}/{row.treename.strip()}")
-    chain.Print()
+    # chain.Print()
     os.system(f"mkdir {outputfolder}/{row.label}")
-    print(f"-------- DEBUG -------\nCreated directory: {outputfolder}/{row.label}")
+    # print(f"-------- DEBUG -------\nCreated directory: {outputfolder}/{row.label}")
     # os.system(f"cp index.php {outputfolder}/{row.label}")
     plot_df.apply(lambda plotrow: plot(plotrow, chain, f"{outputfolder}/{row.label}"), axis=1)
 
