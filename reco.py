@@ -52,7 +52,11 @@ def main(arguments):
     central_idx = np.where(mask_central)[0][0]
     # print(f"------- DEBUG -------\nmask_central: {mask_central}")
     mask_5x5 = reco_functions.mask_5x5_matrix(eta_min, phi_min, eta_max, phi_max)
-    # print(f"------- DEBUG -------\nmask_matrix: {mask_5x5}")
+    # print(f"------- DEBUG -------\nmask_5x5: {mask_5x5}")
+    ieta_5x5 = ieta[mask_5x5]
+    iphi_5x5 = iphi[mask_5x5]
+    mask_5x5_central = reco_functions.mask_5x5_central(ieta_5x5, iphi_5x5, eta_min, phi_min)
+    # print(f"------- DEBUG -------\nmask_5x5_central: {mask_5x5_central}")
     
     # read branch xtal_sample
     waves = tree["xtal_sample"].array(library="np")
@@ -77,52 +81,61 @@ def main(arguments):
     # plot_functions.plot_central_waveform(waves_masked, central_idx, output_path=f"./{reco_dir}/central_waveforms_masked.pdf")  # plot of all waves for central channel after masking
 
     # charge_sum in 5x5 matrix
-    charge_5x5 = reco_functions.charge_sum_5x5(signal_window, mask_5x5, charge_thr=100)
-
-    # mean of the index of the maximum sample
-    # mean_sample_max = reco_functions.mean_sample_max(waves_masked)
+    charge_5x5, charge_sum_5x5, charge_central = reco_functions.charge_5x5(signal_window, mask_5x5, mask_5x5_central, charge_thr=100)
+    # index of the maximum sample
     sample_max = np.argmax(waves_masked, axis=2)
+    # mean of all values
+    values_mean = np.mean(waves_masked, axis=2)
+    # std of all values
+    values_std = np.std(waves_masked, axis=2)
+    # maximum sample
+    values_max = np.max(waves_masked, axis=2)
+    # amplitude_map of the 5x5 matrix
+    amplitude_map_5x5 = charge_5x5 / charge_sum_5x5[:, np.newaxis]
 
     # data_to_plot_nevents.csv creation
     f = ROOT.TFile(f"./{reco_dir}/{run}_{spill}_reco.root", "RECREATE")
     tree_nevents = ROOT.TTree("h4_reco", "")
-    charge_branch = array('f', [0.0])
-    sample_max_branch = array('f', [0.0] * nchannels)
+    charge_sum_5x5_branch = array('f', [0.0])
+    charge_central_branch = array('f', [0.0])
     ieta_branch = array('f', [0.0] * nchannels)
     iphi_branch = array('f', [0.0] * nchannels)
-    tree_nevents.Branch("charge_5x5", charge_branch, "charge_5x5/F")
-    tree_nevents.Branch("sample_max", sample_max_branch, f"sample_max[{nchannels}]/F")
+    sample_max_branch = array('f', [0.0] * nchannels)
+    values_mean_branch = array('f', [0.0] * nchannels)
+    values_std_branch = array('f', [0.0] * nchannels)
+    values_max_branch = array('f', [0.0] * nchannels)
+    ieta_5x5_branch = array('f', [0.0] * 25)
+    iphi_5x5_branch = array('f', [0.0] * 25)
+    amplitude_map_5x5_branch = array('f', [0.0] * 25)
+    tree_nevents.Branch("charge_sum_5x5", charge_sum_5x5_branch, "charge_sum_5x5/F")
+    tree_nevents.Branch("charge_central", charge_central_branch, f"charge_central/F")
     tree_nevents.Branch("ieta", ieta_branch, f"ieta[{nchannels}]/F")
     tree_nevents.Branch("iphi", iphi_branch, f"iphi[{nchannels}]/F")
+    tree_nevents.Branch("sample_max", sample_max_branch, f"sample_max[{nchannels}]/F")
+    tree_nevents.Branch("values_mean", values_mean_branch, f"values_mean[{nchannels}]/F")
+    tree_nevents.Branch("values_std", values_std_branch, f"values_std[{nchannels}]/F")
+    tree_nevents.Branch("values_max", values_max_branch, f"values_max[{nchannels}]/F")
+    tree_nevents.Branch("ieta_5x5", ieta_5x5_branch, f"ieta_5x5[{25}]/F")
+    tree_nevents.Branch("iphi_5x5", iphi_5x5_branch, f"iphi_5x5[{25}]/F")
+    tree_nevents.Branch("amplitude_map_5x5", amplitude_map_5x5_branch, f"amplitude_map_5x5[{25}]/F")
     for i in range(nevents):
-        charge_branch[0] = charge_5x5[i]
+        charge_sum_5x5_branch[0] = charge_sum_5x5[i]
         for ch in range(nchannels):
-            sample_max_branch[ch] = sample_max[i][ch]
             ieta_branch[ch] = ieta[ch]
             iphi_branch[ch] = iphi[ch]
             # print(ieta[ch], iphi[ch])
+            sample_max_branch[ch] = sample_max[i][ch]
+            values_mean_branch[ch] = values_mean[i][ch]
+            values_std_branch[ch] = values_std[i][ch]
+            values_max_branch[ch] = values_max[i][ch]
+            if ch < 25:
+                ieta_5x5_branch[ch] = ieta_5x5[ch]
+                iphi_5x5_branch[ch] = iphi_5x5[ch]
+                amplitude_map_5x5_branch[ch] = amplitude_map_5x5[i][ch]
         tree_nevents.Fill()
     tree_nevents.Write()
     print(f"Tree h4_reco written in {reco_dir}/{run}_{spill}_reco.root")
     f.Close()
-
-    # # data_to_plot_nchannels.csv creation
-    # f = ROOT.TFile(f"./{reco_dir}/{run}_{spill}_reco_nchannels.root", "RECREATE")
-    # tree_nchannels = ROOT.TTree("h4_reco", "")
-    # eta_branch = array('i', [0])
-    # phi_branch = array('i', [0])
-    # mean_sample_max_branch = array('f', [0.0]*nevents)
-    # tree_nchannels.Branch("ieta", eta_branch, "ieta/I")
-    # tree_nchannels.Branch("iphi", phi_branch, "iphi/I")
-    # tree_nchannels.Branch("mean_sample_max", mean_sample_max_branch, f"mean_sample_max/F")
-    # for i in range(nchannels):
-    #     eta_branch[0] = ieta[i]
-    #     phi_branch[0] = iphi[i]
-    #     mean_sample_max_branch[0] = mean_sample_max[i]
-    #     tree_nchannels.Fill()
-    # tree_nchannels.Write()
-    # print(f"Tree h4_reco written in {reco_dir}/{run}_{spill}_reco_nchannels.root")
-    # f.Close()
     
     time_end = time.time()
     print(f"Time elapsed for reco: {time_end - time_start:.4f} s")

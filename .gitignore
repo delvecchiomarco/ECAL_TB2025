@@ -17,3 +17,5 @@ venv/
 # File di sistema
 .DS_Store
 
+# file di VS code
+.vscode/

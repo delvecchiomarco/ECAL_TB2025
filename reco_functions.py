@@ -62,6 +62,13 @@ def mask_5x5_matrix(eta_min, phi_min, eta_max, phi_max):
     return mask_5x5
 
 
+def mask_5x5_central(ieta_5x5, iphi_5x5, eta_min, phi_min):
+    mask_eta = ieta_5x5 == (eta_min+2)
+    mask_phi = iphi_5x5 == (phi_min+2)
+    mask_5x5_central = mask_eta & mask_phi
+    return mask_5x5_central
+
+
 def mask_amplitudes(amplitudes, central_idx, threshold=150):
     #nevents, nchannels, nsamples = amplitudes.shape
     amplitudes_central = amplitudes[:, central_idx, :]
@@ -104,17 +111,12 @@ def mask_rms_baseline(amplitudes, central_idx, threshold=20, pre=5, post=10):
     return mask_rms_bline, baselines, signal_window
 
 
-def charge_sum_5x5(signal_window, mask_5x5, charge_thr=100):
+def charge_5x5(signal_window, mask_5x5, mask_5x5_central, charge_thr=100):
     signal_window5x5 = signal_window[:, mask_5x5, :]
     charge = signal_window5x5.sum(axis=2)
-    # print(f"------- DEBUG -------\n{charge.shape}")
+    # print(f"------- DEBUG -------\ncharge.shape: {charge.shape}")
     charge[charge < charge_thr] = 0
     charge_sum_5x5 = charge.sum(axis=1)
     # print(f"------- DEBUG -------\ncharge_sum_5x5.shape: {charge_sum_5x5.shape}")
-    return charge_sum_5x5
-
-
-# def mean_sample_max(waves_masked):
-#     max_indices = np.argmax(waves_masked, axis=2)
-#     mean_sample_max = np.mean(max_indices, axis=0)
-#     return mean_sample_max
+    charge_central = charge[:, mask_5x5_central].sum(axis=1)
+    return charge, charge_sum_5x5, charge_central

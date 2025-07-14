@@ -1,3 +1,7 @@
-name;title;x;y;z;cuts;color;binsnx;binsminx;binsmaxx;binsny;binsminy;binsmaxy;xlabel;ylabel
-charge_5x5; ;charge_5x5;0;0; ;kBlack;10000;6000;16000;0;0;0;charge 5x5 [pC];pC
-mean_sample_max; ;ieta;iphi;sample_max; ;0;15;46;61;15;1;16;eta;phi
+name;title;x;y;z;cuts;color;binsnx;binsminx;binsmaxx;binsny;binsminy;binsmaxy;contours;xlabel;ylabel;zlabel;logz
+charge_sum_5x5; ;charge_sum_5x5;0;0; ;kBlack;10000;6000;16000;0;0;0;0;charge 5x5 [ADC counts];ADC counts; ;
+mean_sample_max; ;ieta;iphi;sample_max; ;0;15;46;61;15;1;16;25;eta;phi;sample index;0
+mean_values; ;ieta;iphi;values_mean; ;0;15;46;61;15;1;16;1000;eta;phi;ADC counts;1
+std_values; ;ieta;iphi;values_std; ;0;15;46;61;15;1;16;1000;eta;phi;ADC counts;1
+mean_values_max; ;ieta;iphi;values_max; ;0;15;46;61;15;1;16;1000;eta;phi;ADC counts;1
+amplitude_map_5x5; ;ieta_5x5;iphi_5x5;amplitude_map_5x5; ;0;5;54;59;5;7;12;1000;eta;phi;charge / charge_5x5;0
