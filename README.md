@@ -4,11 +4,11 @@ Overview of the code:
   - **reco.py & reco_functions.py**\
     python script for the reconstruction, where all the useful variables for DQM plots are saved in a tree
 
-  - plotter.py & plot_functions.py
+  - **plotter.py & plot_functions.py**\
     python script for plotting, very general with one single function for the different plots
 
-  - data_to_plot.csv
+  - **data_to_plot.csv**\
     csv file with path to the reco tree
 
-  - plot_list.csv
+  - **plot_list.csv**\
     csv file with the list of the plots and the settings for each one
