@@ -1,4 +1,4 @@
-This code is used for the reconstruction of unpacked data derived from the EBeTe unpacker used in ECAL Test Beam analysis.
+This code is used for the reconstruction of unpacked data derived from the EBeTe unpacker used in ECAL Test Beam analysis
 
 Overview of the code:
   - **reco.py & reco_functions.py**\
