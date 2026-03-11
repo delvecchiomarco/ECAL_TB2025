@@ -269,19 +269,31 @@ def plot(row, uproot_dict, outputfolder, just_draw=False):
 
     h.GetXaxis().SetTitle(row.xlabel)
 
-
+    t_save = time.time()
     c.SaveAs(f"{outputfolder}/{row.folder}/{name}.png")
+    #print(f"saving png took {time.time() - t_save}s", file=sys.stderr, flush=True)
+
+    t_save = time.time()
     if just_draw: c.Write("", ROOT.TObject.kOverwrite)
     else:
+      t_save = time.time()
       c.Write()
+      #print(f"writing canvas  took {time.time() - t_save}s", file=sys.stderr, flush=True)
+      t_save = time.time()
       if str(row.y).strip() != "0" and str(row.z).strip() != "0": h.Scale(h.GetEntries())
+      #print(f"rescaling h took {time.time() - t_save}s", file=sys.stderr, flush=True)
+      t_save = time.time()
       h.Write()
+      #print(f"writing histo took {time.time() - t_save}s", file=sys.stderr, flush=True)
+      t_save = time.time()
     f.Close()
-    c.Close()
+    #print(f"saving .root took {time.time() - t_save}s", file=sys.stderr, flush=True)
+    t_save = time.time()
     del c
     del h
+    #print(f"double del took {time.time() - t_save}s", file=sys.stderr, flush=True)
 
-    print(f"{name} took {time.time() - time_start:.1f}s", file=sys.stderr, flush=True)
   except Exception:
     print(traceback.format_exc(), file=sys.stderr, flush=True)
+
 
